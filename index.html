@@ -2,176 +2,104 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Math Tutor Admin Portal</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      padding: 20px;
-    }
-    input, button {
-      display: block;
-      margin: 8px 0;
-      padding: 8px;
-      width: 260px;
-    }
-    #admin {
-      display: none;
-      background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      margin-top: 20px;
-    }
-  </style>
+  <title>Math Tutor Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
-
 <body>
+  <h2>Math Tutor Login</h2>
 
-<h1>Math Tutor Portal</h1>
+  <div id="login">
+    <input id="email" type="email" placeholder="Email" /><br><br>
+    <input id="password" type="password" placeholder="Password" /><br><br>
+    <button onclick="login()">Login</button>
+    <p id="loginMsg"></p>
+  </div>
 
-<div id="login">
-  <input id="email" type="email" placeholder="Email" />
-  <input id="password" type="password" placeholder="Password" />
-  <button onclick="login()">Login</button>
-</div>
+  <div id="dashboard" style="display:none;">
+    <h2 id="welcome"></h2>
+    <p id="roleInfo"></p>
+    <button onclick="logout()">Logout</button>
+  </div>
 
-<button id="logoutBtn" style="display:none" onclick="logout()">Logout</button>
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import {
+      getAuth,
+      signInWithEmailAndPassword,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      setDoc
+    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-<p id="status"></p>
+    // 🔥 YOUR FIREBASE CONFIG
+    const firebaseConfig = {
+      apiKey: "AIzaSyCLHLzJ1wm-j6i7YEf5YfBFGPcE4Qk1gQo",
+      authDomain: "math-tutor-student-records.firebaseapp.com",
+      projectId: "math-tutor-student-records",
+      storageBucket: "math-tutor-student-records.firebasestorage.app",
+      messagingSenderId: "759946890002",
+      appId: "1:759946890002:web:0fc283523c793c3eeb01cb"
+    };
 
-<div id="admin">
-  <h2>Admin Dashboard</h2>
+    // Init
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-  <input id="first" placeholder="Student first name">
-  <input id="last" placeholder="Student last name">
-  <input id="grade" type="number" placeholder="Grade">
-  <button onclick="addStudent()">Add Student</button>
+    // Login
+    window.login = async () => {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      document.getElementById("loginMsg").innerText = "Logging in...";
 
-  <h3>Students</h3>
-  <ul id="list"></ul>
-</div>
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (e) {
+        document.getElementById("loginMsg").innerText = e.message;
+      }
+    };
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import {
-    getAuth,
-    signInWithEmailAndPassword,
-    onAuthStateChanged,
-    signOut
-  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-  import {
-    getFirestore,
-    doc,
-    getDoc,
-    collection,
-    addDoc,
-    getDocs
-  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    // Logout
+    window.logout = async () => {
+      await signOut(auth);
+      location.reload();
+    };
 
-  // 🔥 YOUR FIREBASE CONFIG
-  const firebaseConfig = {
-    apiKey: "AIzaSyCLHLzJ1wm-j6i7YEf5YfBFGPcE4Qk1gQo",
-    authDomain: "math-tutor-student-records.firebaseapp.com",
-    projectId: "math-tutor-student-records",
-    storageBucket: "math-tutor-student-records.firebasestorage.app",
-    messagingSenderId: "759946890002",
-    appId: "1:759946890002:web:0fc283523c793c3eeb01cb"
-  };
+    // Auth State
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return;
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
+      const uid = user.uid;
+      const email = user.email;
 
-  const status = document.getElementById("status");
-  const admin = document.getElementById("admin");
-  const loginDiv = document.getElementById("login");
-  const logoutBtn = document.getElementById("logoutBtn");
+      const userRef = doc(db, "users", uid);
+      const snap = await getDoc(userRef);
 
-  // 🔐 LOGIN
-  window.login = async () => {
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+      // 👇 CREATE USER RECORD IF MISSING
+      if (!snap.exists()) {
+        await setDoc(userRef, {
+          email: email,
+          role: "student", // default
+          createdAt: new Date()
+        });
+      }
 
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (e) {
-      status.textContent = e.message;
-    }
-  };
+      const userData = (await getDoc(userRef)).data();
+      const role = userData.role || "student";
 
-  // 🔓 LOGOUT
-  window.logout = async () => {
-    await signOut(auth);
-  };
-
-  // 👤 AUTH STATE
-  onAuthStateChanged(auth, async (user) => {
-    if (!user) {
-      status.textContent = "Not logged in";
-      admin.style.display = "none";
-      logoutBtn.style.display = "none";
-      loginDiv.style.display = "block";
-      return;
-    }
-
-    status.textContent = "Logged in as " + user.email;
-    loginDiv.style.display = "none";
-    logoutBtn.style.display = "block";
-
-    // ✅ CHECK ROLE
-    const ref = doc(db, "users", user.uid);
-    const snap = await getDoc(ref);
-
-    if (!snap.exists()) {
-      status.textContent = "❌ User record missing in Firestore";
-      return;
-    }
-
-    if (snap.data().role !== "admin") {
-      status.textContent = "❌ Not an admin";
-      return;
-    }
-
-    admin.style.display = "block";
-    loadStudents();
-  });
-
-  // ➕ ADD STUDENT
-  window.addStudent = async () => {
-    const first = document.getElementById("first").value;
-    const last = document.getElementById("last").value;
-    const grade = document.getElementById("grade").value;
-
-    if (!first || !last || !grade) {
-      alert("Fill all fields");
-      return;
-    }
-
-    await addDoc(collection(db, "students"), {
-      first,
-      last,
-      grade
+      // UI
+      document.getElementById("login").style.display = "none";
+      document.getElementById("dashboard").style.display = "block";
+      document.getElementById("welcome").innerText = `Welcome ${email}`;
+      document.getElementById("roleInfo").innerText = `Role: ${role}`;
     });
-
-    loadStudents();
-  };
-
-  // 📋 LOAD STUDENTS
-  async function loadStudents() {
-    const list = document.getElementById("list");
-    list.innerHTML = "";
-
-    const snap = await getDocs(collection(db, "students"));
-    snap.forEach(d => {
-      const s = d.data();
-      const li = document.createElement("li");
-      li.textContent = `${s.first} ${s.last} (Grade ${s.grade})`;
-      list.appendChild(li);
-    });
-  }
-</script>
-
+  </script>
 </body>
 </html>
+
