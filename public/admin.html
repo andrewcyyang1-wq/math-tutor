@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard – Math Tutor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Core app logic -->
+  <script type="module" src="app.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      margin: 0;
+      padding: 20px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+    h1 {
+      margin: 0;
+    }
+    button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background: #2563eb;
+      color: white;
+      font-size: 14px;
+    }
+    button.logout {
+      background: #dc2626;
+    }
+    section {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+    input, textarea {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Admin Dashboard</h1>
+    <button class="logout" onclick="logout()">Logout</button>
+  </header>
+
+  <!-- CREATE STUDENT -->
+  <section>
+    <h2>Create Student Account</h2>
+    <input id="newStudentEmail" type="email" placeholder="Student email">
+    <input id="newStudentPassword" type="password" placeholder="Temporary password">
+    <button onclick="createStudent()">Create Student</button>
+  </section>
+
+  <!-- UPLOAD HOMEWORK -->
+  <section>
+    <h2>Upload Homework</h2>
+    <input id="homeworkStudentId" placeholder="Student ID (UID)">
+    <textarea id="homeworkText" placeholder="Homework details"></textarea>
+    <button onclick="uploadHomework()">Upload Homework</button>
+  </section>
+
+  <!-- UPLOAD SESSION SUMMARY -->
+  <section>
+    <h2>Upload Session Summary</h2>
+    <input id="summaryStudentId" placeholder="Student ID (UID)">
+    <textarea id="summaryText" placeholder="Session summary"></textarea>
+    <button onclick="uploadSummary()">Upload Summary</button>
+  </section>
+
+  <script>
+    function createStudent() {
+      const email = document.getElementById("newStudentEmail").value;
+      const password = document.getElementById("newStudentPassword").value;
+
+      if (!email || !password) {
+        alert("Email and password required");
+        return;
+      }
+
+      adminCreateStudent(email, password)
+        .catch(err => alert(err.message));
+    }
+
+    function uploadHomework() {
+      const studentId = document.getElementById("homeworkStudentId").value;
+      const text = document.getElementById("homeworkText").value;
+
+      if (!studentId || !text) {
+        alert("Student ID and homework required");
+        return;
+      }
+
+      adminUploadHomework(studentId, text)
+        .catch(err => alert(err.message));
+    }
+
+    function uploadSummary() {
+      const studentId = document.getElementById("summaryStudentId").value;
+      const text = document.getElementById("summaryText").value;
+
+      if (!studentId || !text) {
+        alert("Student ID and summary required");
+        return;
+      }
+
+      adminUploadSessionSummary(studentId, text)
+        .catch(err => alert(err.message));
+    }
+  </script>
+</body>
+</html>
